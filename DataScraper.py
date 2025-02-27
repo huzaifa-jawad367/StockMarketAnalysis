@@ -1,14 +1,14 @@
 import alpaca_trade_api as tradeapi
 import pandas as pd
-from pymongo import MongoClient
+import sqlite3
 
 class AlpacaStockScraper:
     def __init__(self, companies, start_date, end_date, timeframe='day',
-                 api_key='YOUR_API_KEY', api_secret='YOUR_API_SECRET',
-                 base_url='https://paper-api.alpaca.markets',
-                 mongo_uri='mongodb://localhost:27017/', mongo_db='stock_data', mongo_collection='prices'):
+                 api_key='PKCNI0Y0XAHDTQ0X45I1', api_secret='y3OMojQ17W2SsnaKsBoTj0Xcq4Ah34kWemeRSo4U',
+                 base_url='https://paper-api.alpaca.markets/v2',
+                 db_filename='stock_data_hourly.db', table_name='prices'):
         """
-        Initialize the AlpacaStockScraper with company data, date range, Alpaca API credentials, and MongoDB configuration.
+        Initialize the AlpacaStockScraper with company data, date range, Alpaca API credentials, and SQLite configuration.
 
         :param companies: Dictionary mapping company names to ticker symbols.
         :param start_date: Start date for historical data (YYYY-MM-DD).
@@ -17,9 +17,8 @@ class AlpacaStockScraper:
         :param api_key: Alpaca API key.
         :param api_secret: Alpaca API secret.
         :param base_url: Alpaca API base URL.
-        :param mongo_uri: MongoDB connection URI.
-        :param mongo_db: MongoDB database name.
-        :param mongo_collection: MongoDB collection name.
+        :param db_filename: Filename for the local SQLite database.
+        :param table_name: Name of the table to store stock data.
         """
         self.companies = companies
         self.start_date = start_date
@@ -29,14 +28,8 @@ class AlpacaStockScraper:
         self.api_secret = api_secret
         self.base_url = base_url
         self.api = tradeapi.REST(self.api_key, self.api_secret, self.base_url, api_version='v2')
-        
-        # Setup MongoDB connection.
-        self.mongo_uri = mongo_uri
-        self.mongo_db = mongo_db
-        self.mongo_collection = mongo_collection
-        self.mongo_client = MongoClient(self.mongo_uri)
-        self.db = self.mongo_client[self.mongo_db]
-        self.collection = self.db[self.mongo_collection]
+        self.db_filename = db_filename
+        self.table_name = table_name
 
     def fetch_stock_data(self, ticker):
         """
@@ -76,19 +69,18 @@ class AlpacaStockScraper:
             print("No data was scraped.")
             return None
 
-    def save_to_mongo(self, data):
+    def save_to_sqlite(self, data):
         """
-        Save the combined DataFrame to MongoDB.
-
+        Save the combined DataFrame to a local SQLite database.
+        
         :param data: DataFrame containing the historical stock data.
         """
         try:
-            records = data.to_dict("records")
-            if records:
-                result = self.collection.insert_many(records)
-                print(f"Inserted {len(result.inserted_ids)} documents into MongoDB collection '{self.mongo_collection}'.")
+            with sqlite3.connect(self.db_filename) as conn:
+                data.to_sql(self.table_name, conn, if_exists='append', index=False)
+                print(f"Data saved to SQLite database '{self.db_filename}' in table '{self.table_name}'.")
         except Exception as e:
-            print(f"Error saving data to MongoDB: {e}")
+            print(f"Error saving data to SQLite: {e}")
 
 if __name__ == "__main__":
     companies = {
@@ -105,19 +97,18 @@ if __name__ == "__main__":
     start_date = "2021-01-01"
     end_date = "2021-12-31"
     
-    # Create an instance of the scraper (update API and MongoDB credentials as needed).
+    # Create an instance of the scraper (update API credentials as needed).
     scraper = AlpacaStockScraper(companies, start_date, end_date,
-                                 timeframe='day',
-                                 api_key='YOUR_API_KEY',
-                                 api_secret='YOUR_API_SECRET',
-                                 base_url='https://paper-api.alpaca.markets',
-                                 mongo_uri='mongodb://localhost:27017/',
-                                 mongo_db='stock_data',
-                                 mongo_collection='prices')
+                                 timeframe='1H',
+                                 api_key='PKCNI0Y0XAHDTQ0X45I1',
+                                 api_secret='y3OMojQ17W2SsnaKsBoTj0Xcq4Ah34kWemeRSo4U',
+                                 base_url='https://paper-api.alpaca.markets/v2',
+                                 db_filename='stock_data_hourly.db',
+                                 table_name='prices')
     
     # Fetch the stock data.
     data = scraper.scrape()
     
-    # If data was successfully scraped, save it to MongoDB.
+    # If data was successfully scraped, save it to the local SQLite database.
     if data is not None:
-        scraper.save_to_mongo(data)
+        scraper.save_to_sqlite(data)
