@@ -1,6 +1,8 @@
 import alpaca_trade_api as tradeapi
 import pandas as pd
 import sqlite3
+from datetime import date
+from dateutil.relativedelta import relativedelta
 
 class AlpacaStockScraper:
     def __init__(self, companies, start_date, end_date, timeframe='day',
@@ -93,9 +95,17 @@ if __name__ == "__main__":
         "AMAZON": "AMZN"
     }
     
-    # Set your desired date range (format: YYYY-MM-DD).
-    start_date = "2021-01-01"
-    end_date = "2021-12-31"
+    # # Set your desired date range (format: YYYY-MM-DD).
+    # start_date = "2021-01-01"
+    # end_date = "2021-12-31"
+
+    # Keep the end date as today and the the start date as 5 years ago
+    today = date.today()
+    five_years_ago = today - relativedelta(years=5)
+
+    start_date = five_years_ago.strftime("%Y-%m-%d")
+    end_date = today.strftime("%Y-%m-%d")
+
     
     # Create an instance of the scraper (update API credentials as needed).
     scraper = AlpacaStockScraper(companies, start_date, end_date,
