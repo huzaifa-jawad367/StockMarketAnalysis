@@ -6,7 +6,7 @@ from dateutil.relativedelta import relativedelta
 
 class AlpacaStockScraper:
     def __init__(self, companies, start_date, end_date, timeframe='day',
-                 api_key='PKCNI0Y0XAHDTQ0X45I1', api_secret='y3OMojQ17W2SsnaKsBoTj0Xcq4Ah34kWemeRSo4U',
+                 api_key='PKC71B7I3AHBY3VN8DSW', api_secret='AaKJ3aZG2EZqKLYqVPIuABC3xzQdd09pkIK6Wpv5',
                  base_url='https://paper-api.alpaca.markets/v2',
                  db_filename='stock_data_hourly.db', table_name='prices'):
         """
@@ -64,6 +64,10 @@ class AlpacaStockScraper:
             all_data.append(df)
         if all_data:
             combined_df = pd.concat(all_data)
+
+            combined_df = combined_df.reset_index()
+            combined_df = combined_df.rename(columns={'index': 'timestamp'})
+
             print("Scraping complete. Combined data:")
             print(combined_df)
             return combined_df
@@ -100,18 +104,21 @@ if __name__ == "__main__":
     # end_date = "2021-12-31"
 
     # Keep the end date as today and the the start date as 5 years ago
-    today = date.today()
+    today = date.today() - relativedelta(years=1)
     five_years_ago = today - relativedelta(years=5)
 
     start_date = five_years_ago.strftime("%Y-%m-%d")
     end_date = today.strftime("%Y-%m-%d")
 
+    print(start_date)
+    print(end_date)
+
     
     # Create an instance of the scraper (update API credentials as needed).
     scraper = AlpacaStockScraper(companies, start_date, end_date,
                                  timeframe='1H',
-                                 api_key='PKCNI0Y0XAHDTQ0X45I1',
-                                 api_secret='y3OMojQ17W2SsnaKsBoTj0Xcq4Ah34kWemeRSo4U',
+                                 api_key='PKC71B7I3AHBY3VN8DSW',
+                                 api_secret='AaKJ3aZG2EZqKLYqVPIuABC3xzQdd09pkIK6Wpv5',
                                  base_url='https://paper-api.alpaca.markets/v2',
                                  db_filename='stock_data_hourly.db',
                                  table_name='prices')
